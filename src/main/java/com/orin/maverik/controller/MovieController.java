@@ -1,20 +1,17 @@
 package com.orin.maverik.controller;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.orin.maverik.domain.Movie;
-import com.orin.maverik.domain.MovieSearchParameters;
-import com.orin.maverik.domain.MovieSearchResponse;
 import com.orin.maverik.services.MovieService;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.text.html.Option;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -64,7 +61,7 @@ public class MovieController {
 
 
     @PostMapping()
-    public ResponseEntity<Object> saveNewMovie(@RequestBody Movie movie) {
+    public ResponseEntity<Object> saveNewMovie(@Valid @RequestBody Movie movie) {
         return new ResponseEntity<>(movieService.saveNewMovie(movie), HttpStatus.CREATED);
     }
     @GetMapping(value="/{id}")
@@ -74,7 +71,7 @@ public class MovieController {
     }
 
     @PutMapping(value="/{id}")
-    public ResponseEntity<Object> updateMovie(@PathVariable String id, @RequestBody Movie movie) {
+    public ResponseEntity<Object> updateMovie(@PathVariable String id, @Valid @RequestBody Movie movie) {
         Movie updated = movieService.updateMovie(id, movie);
         if (updated == null) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
@@ -88,5 +85,20 @@ public class MovieController {
     public ResponseEntity<Object> deleteMovie(@PathVariable String id) {
         movieService.deleteMovie(id);
         return new ResponseEntity<>(null, HttpStatus.OK);
+    }
+
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {
+
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        return errors;
     }
 }

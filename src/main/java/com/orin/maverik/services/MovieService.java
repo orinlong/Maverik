@@ -33,30 +33,33 @@ public class MovieService {
 
 
     public void loadDatabase() {
+        // We will do a search of movies with these words in the title to add them to our db
         List<String> titles = List.of("Lion", "Flower", "Eye", "Princess", "Dinosaur", "Jurassic");
-        Set<Movie> movieList = new HashSet<>();
-        titles.forEach(oneTitle -> {
+        Set<Movie> movieSet = new HashSet<>();
 
+        titles.forEach(oneTitle -> {
+            // Search for movies with the keyword in the title
             ObjectNode jsonResponse = restService.sendRestRequest("https://gateway.maverik.com/movie/api/movie/title/" + oneTitle + "?source=web", null, HttpMethod.GET);
             if (String.valueOf(jsonResponse.get("httpResponseStatus")).startsWith("2")) {
                 if (jsonResponse.has("body") && jsonResponse.get("body").isArray()) {
                     ArrayNode listOfTitles = (ArrayNode) jsonResponse.get("body");
                     for (int i = 0; i < listOfTitles.size(); i++) {
+                        // Get the details of each movie and add that movie to our Set (set to prevent duplicates based on IMDB id)
                         ObjectNode oneMovieResponse = restService.sendRestRequest("https://gateway.maverik.com/movie/api/movie/" + listOfTitles.get(i).get("imdbID").asText() + "?source=web", null, HttpMethod.GET);
-                        movieList.add(MapperUtil.convertToObject(oneMovieResponse, Movie.class));
+                        movieSet.add(MapperUtil.convertToObject(oneMovieResponse, Movie.class));
                     }
                 }
             }
         });
 
-        if (!CollectionUtils.isEmpty(movieList)) {
-            movieRepository.saveAll(movieList);
+        if (!CollectionUtils.isEmpty(movieSet)) {
+            movieRepository.saveAll(movieSet);
         }
     }
 
 
     public Movie saveNewMovie(Movie movie) {
-        // Make sure the movie doesn't already exist by title and year
+        // Make sure the movie doesn't already exist by imdbId
         List<Movie> existing = movieRepository.findAllByImdbID(movie.getImdbID());
         if (CollectionUtils.isEmpty(existing)) {
             return movieRepository.save(movie);

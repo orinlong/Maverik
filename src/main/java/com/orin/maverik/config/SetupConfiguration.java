@@ -11,8 +11,7 @@ public class SetupConfiguration {
 
     @Bean
     public RestService createRestService() {
-        RestService restService = new RestService();
-        return restService;
+        return new RestService();
     }
 
 }
